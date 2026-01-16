@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Plus, TrendingUp, Calendar, Award } from 'lucide-react';
+import { ArrowLeft, Clock, TrendingUp, Calendar, Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { authService } from '../services/auth';
 import { sessionsService } from '../services/sessions';
 import PomodoroTimer from '../components/PomodoroTimer';
-import { showSuccess, showError } from '../utils/toast';
-import { getContextualPhrase } from '../utils/motivational';
+import { showError } from '../utils/toast';
 import { formatHours } from '../utils/timeFormatter';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import './StudyHours.css';
@@ -18,8 +17,6 @@ const StudyHours = () => {
   const [weekData, setWeekData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTimer, setShowTimer] = useState(false);
-  // Formulário de adicionar horas manualmente REMOVIDO
-  // const [showForm, setShowForm] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#8B5CF6'];
@@ -72,40 +69,7 @@ const StudyHours = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // Converter horas e minutos para apenas minutos antes de enviar
-      const hours = parseFloat(formData.hours) || 0;
-      const minutes = parseInt(formData.minutes) || 0;
-      const totalMinutes = Math.round(hours * 60) + minutes;
-      
-      if (totalMinutes <= 0) {
-        showError('É necessário informar pelo menos 1 minuto de estudo');
-        return;
-      }
-      
-      await sessionsService.create({
-        date: formData.date,
-        minutes: totalMinutes,
-        subject: formData.subject || null,
-        notes: formData.notes || null
-      });
-      const totalHours = totalMinutes / 60;
-      showSuccess(getContextualPhrase({ type: 'study_hours', hours: totalHours }) || 'Horas registradas com sucesso!');
-      setShowForm(false);
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        hours: '',
-        minutes: '',
-        subject: '',
-        notes: ''
-      });
-      loadData();
-    } catch (error) {
-      showError(error.response?.data?.error || 'Erro ao registrar horas');
-    }
-  };
+  // Função handleSubmit REMOVIDA - não é mais permitido adicionar horas manualmente
 
   const handleSessionComplete = () => {
     loadData();
@@ -254,109 +218,7 @@ const StudyHours = () => {
             </div>
           </section>
 
-          {/* Botões de Ação */}
-          <section className="actions-section">
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="btn btn-primary"
-            >
-              <Plus size={20} />
-              {showForm ? 'Cancelar' : 'Registrar Horas Manualmente'}
-            </button>
-          </section>
-
-          {/* Formulário de Registro */}
-          {showForm && (
-            <section className="form-section">
-              <div className="form-card">
-                <h2>Registrar Horas de Estudo</h2>
-                <form onSubmit={handleSubmit}>
-                  <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="date">Data</label>
-                    <input
-                      type="date"
-                      id="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={(e) => {
-                        const selectedDate = e.target.value;
-                        const today = new Date().toISOString().split('T')[0];
-                        // Só permite hoje
-                        if (selectedDate === today) {
-                          setFormData({ ...formData, date: selectedDate });
-                        }
-                      }}
-                      max={today}
-                      min={today}
-                      required
-                      readOnly
-                      style={{ cursor: 'not-allowed', opacity: 0.7 }}
-                      title="Só é permitido registrar horas para o dia atual"
-                    />
-                    <small style={{ color: 'var(--text-light)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                      Apenas registros do dia atual são permitidos
-                    </small>
-                  </div>
-                    <div className="form-group">
-                      <label htmlFor="hours">Horas</label>
-                      <input
-                        type="number"
-                        id="hours"
-                        name="hours"
-                        value={formData.hours}
-                        onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
-                        min="0"
-                        max="24"
-                        step="0.5"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="minutes">Minutos</label>
-                      <input
-                        type="number"
-                        id="minutes"
-                        name="minutes"
-                        value={formData.minutes}
-                        onChange={(e) => setFormData({ ...formData, minutes: e.target.value })}
-                        min="0"
-                        max="59"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="subject">Matéria/Tema (opcional)</label>
-                    <input
-                      type="text"
-                      id="subject"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      placeholder="Ex: Direito Constitucional"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="notes">Notas (opcional)</label>
-                    <textarea
-                      id="notes"
-                      name="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      rows="3"
-                      placeholder="Anotações sobre a sessão de estudo..."
-                    />
-                  </div>
-                  <div className="form-actions">
-                    <button type="submit" className="btn btn-primary">
-                      Registrar
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </section>
-          )}
+          {/* Formulário de adicionar horas manualmente REMOVIDO */}
 
           {/* Histórico Recente */}
           {sessions.length > 0 && (
