@@ -264,7 +264,8 @@ export const PomodoroProvider = ({ children }) => {
     }
 
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, handleComplete, initialDuration]); // Removido minutes e seconds das dependências
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, handleComplete, initialDuration]); // minutes e seconds removidos intencionalmente para evitar loops
 
   // Atualizar duração quando o tipo de sessão muda
   // Só atualizar se não estiver carregando estado salvo

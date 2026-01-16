@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Plus, TrendingUp, Calendar, Award, Target, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { ArrowLeft, Clock, Plus, TrendingUp, Calendar, Award } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { authService } from '../services/auth';
 import { sessionsService } from '../services/sessions';
 import PomodoroTimer from '../components/PomodoroTimer';
 import { showSuccess, showError } from '../utils/toast';
 import { getContextualPhrase } from '../utils/motivational';
-import { formatMinutes, formatHours } from '../utils/timeFormatter';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { formatHours } from '../utils/timeFormatter';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 import './StudyHours.css';
 
 const StudyHours = () => {
@@ -98,8 +98,7 @@ const StudyHours = () => {
         notes: formData.notes || null
       });
       const totalHours = totalMinutes / 60;
-      const phrase = getContextualPhrase({ type: 'study_hours', hours: totalHours });
-      showSuccess(phrase || 'Horas registradas com sucesso!');
+      showSuccess(getContextualPhrase({ type: 'study_hours', hours: totalHours }) || 'Horas registradas com sucesso!');
       setShowForm(false);
       setFormData({
         date: new Date().toISOString().split('T')[0],

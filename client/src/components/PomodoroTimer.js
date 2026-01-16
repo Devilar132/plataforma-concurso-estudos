@@ -48,7 +48,6 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
         minutes: studiedMinutes,
         subject: subjectParam || subject || 'Pomodoro'
       });
-      const phrase = getRandomPhrase('pomodoroCompleted');
       if (onSessionComplete) {
         onSessionComplete(session);
       }
@@ -98,7 +97,7 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
     
     if (sessionType === 'study' && studiedMinutes > 0) {
       hasRegisteredRef.current = true;
-      const session = await registerStudySession(studiedMinutes, subject);
+      await registerStudySession(studiedMinutes, subject);
       // Callback já é chamado dentro de registerStudySession
     }
   };

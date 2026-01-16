@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Plus, Search, Target, Star, Play, BarChart3, Flame, TrendingUp, Clock } from 'lucide-react';
+import { Shield, Plus, Search, Target, Star, Play, BarChart3, Clock } from 'lucide-react';
 import { authService } from '../services/auth';
 import { goalsService } from '../services/goals';
 import { statsService } from '../services/stats';
