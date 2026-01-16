@@ -14,12 +14,12 @@ export const usePomodoro = () => {
 };
 
 export const PomodoroProvider = ({ children }) => {
-  const [minutes, setMinutes] = useState(3); // Temporário: 3 minutos para teste
+  const [minutes, setMinutes] = useState(45);
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [sessionType, setSessionType] = useState('study'); // study, shortBreak, longBreak
-  const [initialDuration, setInitialDuration] = useState(3); // Temporário: 3 minutos para teste
+  const [initialDuration, setInitialDuration] = useState(45);
   const [showFloating, setShowFloating] = useState(false);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -27,7 +27,7 @@ export const PomodoroProvider = ({ children }) => {
   const isCompletingRef = useRef(false); // Flag para evitar múltiplas chamadas de handleComplete
 
   const sessionTypes = {
-    study: { duration: 3, label: 'Foco Máximo' }, // Temporário: 3 minutos para teste
+    study: { duration: 45, label: 'Foco Máximo' },
     shortBreak: { duration: 10, label: 'Pausa' },
     longBreak: { duration: 15, label: 'Descanso' }
   };
