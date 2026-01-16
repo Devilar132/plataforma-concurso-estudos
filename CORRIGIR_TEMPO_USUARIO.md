@@ -48,9 +48,33 @@ WHERE email = 'recruta132senhor@gmail.com'
 ON CONFLICT DO NOTHING;
 ```
 
-### Opção 3: Via API (Temporária)
+### Opção 3: Via API (Temporária) ✅
 
-Criar uma rota temporária de admin para fazer a correção.
+Uma rota temporária foi criada em `/api/admin/fix-user-time`.
+
+**Como usar:**
+
+1. Faça uma requisição POST para:
+   ```
+   https://plataforma-concurso-backend-production.up.railway.app/api/admin/fix-user-time
+   ```
+
+2. Com o body JSON:
+   ```json
+   {
+     "email": "recruta132senhor@gmail.com",
+     "minutes": 64
+   }
+   ```
+
+3. Você pode usar Postman, curl, ou qualquer cliente HTTP:
+   ```bash
+   curl -X POST https://plataforma-concurso-backend-production.up.railway.app/api/admin/fix-user-time \
+     -H "Content-Type: application/json" \
+     -d '{"email":"recruta132senhor@gmail.com","minutes":64}'
+   ```
+
+**⚠️ ATENÇÃO**: Esta rota é temporária e não tem autenticação. Remover após uso!
 
 ---
 

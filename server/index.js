@@ -12,6 +12,7 @@ const sessionsRoutes = require('./routes/sessions');
 const streakRoutes = require('./routes/streak');
 const milestonesRoutes = require('./routes/milestones');
 const settingsRoutes = require('./routes/settings');
+const adminRoutes = require('./routes/admin'); // Rota temporária para correções
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -67,6 +68,7 @@ initDatabase((err) => {
   app.use('/api/streak', streakRoutes);
   app.use('/api/milestones', milestonesRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/admin', adminRoutes); // Rota temporária - REMOVER após uso!
   
   // Error handler (deve ser o último middleware)
   app.use(errorHandler);
