@@ -173,13 +173,21 @@ export const PomodoroProvider = ({ children }) => {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Calcular tempo estudado em minutos
+  // Calcular tempo estudado em minutos (baseado no startTime para precisão)
   const getStudiedMinutes = useCallback(() => {
-    const totalSecondsRemaining = minutes * 60 + seconds;
-    const totalSecondsInitial = initialDuration * 60;
-    const studiedSeconds = totalSecondsInitial - totalSecondsRemaining;
-    return Math.max(0, Math.floor(studiedSeconds / 60));
-  }, [minutes, seconds, initialDuration]);
+    if (!startTimeRef.current || !isRunning) {
+      // Se não está rodando, calcular baseado no tempo restante atual
+      const totalSecondsRemaining = minutes * 60 + seconds;
+      const totalSecondsInitial = initialDuration * 60;
+      const studiedSeconds = totalSecondsInitial - totalSecondsRemaining;
+      return Math.max(0, Math.floor(studiedSeconds / 60));
+    }
+    
+    // Se está rodando, calcular baseado no startTime (mais preciso)
+    const now = Date.now();
+    const totalElapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
+    return Math.max(0, Math.floor(totalElapsedSeconds / 60));
+  }, [minutes, seconds, initialDuration, isRunning]);
 
   // Registrar sessão de estudo (mantido para compatibilidade, mas não usado quando onSessionComplete está presente)
   const registerStudySession = useCallback(async (studiedMinutes) => {
@@ -237,7 +245,7 @@ export const PomodoroProvider = ({ children }) => {
     });
   }, [minutes, seconds, isRunning, isComplete, sessionType, initialDuration, saveTimerState]);
 
-  // Efeito para o timer
+  // Efeito para o timer - calcula baseado em startTime para funcionar mesmo em background
   useEffect(() => {
     if (isRunning) {
       // Se não tem startTime, significa que acabou de começar AGORA (não foi carregado)
@@ -247,17 +255,33 @@ export const PomodoroProvider = ({ children }) => {
         startTimeRef.current = Date.now() - (totalSecondsElapsed * 1000);
       }
       
-      intervalRef.current = setInterval(() => {
-        setSeconds(prev => {
-          if (prev > 0) return prev - 1;
-          setMinutes(prev => {
-            if (prev > 0) return prev - 1;
-            handleComplete();
-            return 0;
-          });
-          return 59;
-        });
-      }, 1000);
+      // Função para calcular e atualizar o tempo baseado no startTime
+      const updateTimer = () => {
+        if (!startTimeRef.current) return;
+        
+        const now = Date.now();
+        const totalElapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
+        const totalSecondsInitial = initialDuration * 60;
+        const remainingSeconds = Math.max(0, totalSecondsInitial - totalElapsedSeconds);
+        
+        if (remainingSeconds === 0) {
+          handleComplete();
+          return;
+        }
+        
+        const newMinutes = Math.floor(remainingSeconds / 60);
+        const newSeconds = remainingSeconds % 60;
+        
+        // Só atualizar se mudou (evita re-renders desnecessários)
+        setMinutes(prev => prev !== newMinutes ? newMinutes : prev);
+        setSeconds(prev => prev !== newSeconds ? newSeconds : prev);
+      };
+      
+      // Atualizar imediatamente
+      updateTimer();
+      
+      // Atualizar a cada segundo (mas o cálculo é sempre baseado no startTime)
+      intervalRef.current = setInterval(updateTimer, 100);
     } else {
       clearInterval(intervalRef.current);
       // Não limpar startTime quando pausar, para manter o histórico
@@ -284,6 +308,34 @@ export const PomodoroProvider = ({ children }) => {
   useEffect(() => {
     setShowFloating(isRunning && !isComplete);
   }, [isRunning, isComplete]);
+
+  // Atualizar timer quando a aba volta ao foco (para corrigir tempo perdido em background)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isRunning && startTimeRef.current) {
+        // Quando a aba volta ao foco, recalcular o tempo baseado no startTime
+        const now = Date.now();
+        const totalElapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
+        const totalSecondsInitial = initialDuration * 60;
+        const remainingSeconds = Math.max(0, totalSecondsInitial - totalElapsedSeconds);
+        
+        if (remainingSeconds === 0) {
+          handleComplete();
+        } else {
+          const newMinutes = Math.floor(remainingSeconds / 60);
+          const newSeconds = remainingSeconds % 60;
+          setMinutes(newMinutes);
+          setSeconds(newSeconds);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, initialDuration]);
 
   const startPause = () => {
     if (isComplete) {
