@@ -42,10 +42,13 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
   // Registrar sessão de estudo (com proteção contra duplicação)
   const registerStudySession = useCallback(async (studiedMinutes, subjectParam = null) => {
     // Verificar se já registrou esta sessão (proteção adicional)
-    const sessionKey = `pomodoro_session_${Date.now()}_${studiedMinutes}`;
+    // Usar uma chave baseada no tempo estudado e timestamp aproximado (arredondado para minutos)
+    const now = Date.now();
+    const minuteTimestamp = Math.floor(now / 60000) * 60000; // Arredondar para o minuto
+    const sessionKey = `pomodoro_session_${minuteTimestamp}_${studiedMinutes}`;
     const lastSessionKey = sessionStorage.getItem('pomodoro_last_session_key');
     
-    // Se for a mesma sessão (mesmo minuto), não registrar novamente
+    // Se for a mesma sessão (mesmo minuto e mesma duração), não registrar novamente
     if (lastSessionKey && lastSessionKey === sessionKey) {
       console.log('Sessão já registrada, ignorando duplicata');
       return null;
@@ -59,8 +62,11 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
         subject: subjectParam || subject || 'Pomodoro'
       });
       
-      // Marcar como registrada
+      // Marcar como registrada (válido por 2 minutos para evitar duplicatas)
       sessionStorage.setItem('pomodoro_last_session_key', sessionKey);
+      setTimeout(() => {
+        sessionStorage.removeItem('pomodoro_last_session_key');
+      }, 120000); // 2 minutos
       
       if (onSessionComplete) {
         onSessionComplete(session);

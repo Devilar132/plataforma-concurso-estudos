@@ -193,7 +193,9 @@ export const PomodoroProvider = ({ children }) => {
   // Registrar sessão de estudo (mantido para compatibilidade, mas não usado quando onSessionComplete está presente)
   const registerStudySession = useCallback(async (studiedMinutes) => {
     // Proteção contra duplicação
-    const sessionKey = `pomodoro_context_session_${Date.now()}_${studiedMinutes}`;
+    const now = Date.now();
+    const minuteTimestamp = Math.floor(now / 60000) * 60000; // Arredondar para o minuto
+    const sessionKey = `pomodoro_context_session_${minuteTimestamp}_${studiedMinutes}`;
     const lastSessionKey = sessionStorage.getItem('pomodoro_context_last_session_key');
     
     if (lastSessionKey && lastSessionKey === sessionKey) {
@@ -209,8 +211,11 @@ export const PomodoroProvider = ({ children }) => {
         subject: 'Pomodoro'
       });
       
-      // Marcar como registrada
+      // Marcar como registrada (válido por 2 minutos para evitar duplicatas)
       sessionStorage.setItem('pomodoro_context_last_session_key', sessionKey);
+      setTimeout(() => {
+        sessionStorage.removeItem('pomodoro_context_last_session_key');
+      }, 120000); // 2 minutos
       
       const phrase = getRandomPhrase('pomodoroCompleted');
       showSuccess(phrase || `🎉 ${studiedMinutes} minutos de estudo registrados!`);
