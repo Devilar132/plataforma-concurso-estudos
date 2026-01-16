@@ -24,6 +24,7 @@ export const PomodoroProvider = ({ children }) => {
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const hasLoadedStateRef = useRef(false);
+  const isCompletingRef = useRef(false); // Flag para evitar múltiplas chamadas de handleComplete
 
   const sessionTypes = {
     study: { duration: 45, label: 'Foco Máximo' },
@@ -191,6 +192,15 @@ export const PomodoroProvider = ({ children }) => {
 
   // Registrar sessão de estudo (mantido para compatibilidade, mas não usado quando onSessionComplete está presente)
   const registerStudySession = useCallback(async (studiedMinutes) => {
+    // Proteção contra duplicação
+    const sessionKey = `pomodoro_context_session_${Date.now()}_${studiedMinutes}`;
+    const lastSessionKey = sessionStorage.getItem('pomodoro_context_last_session_key');
+    
+    if (lastSessionKey && lastSessionKey === sessionKey) {
+      console.log('Sessão já registrada no contexto, ignorando duplicata');
+      return;
+    }
+    
     try {
       const today = new Date().toISOString().split('T')[0];
       await sessionsService.create({
@@ -198,34 +208,53 @@ export const PomodoroProvider = ({ children }) => {
         minutes: studiedMinutes,
         subject: 'Pomodoro'
       });
+      
+      // Marcar como registrada
+      sessionStorage.setItem('pomodoro_context_last_session_key', sessionKey);
+      
       const phrase = getRandomPhrase('pomodoroCompleted');
       showSuccess(phrase || `🎉 ${studiedMinutes} minutos de estudo registrados!`);
     } catch (error) {
+      console.error('Erro ao registrar sessão de estudo:', error);
       showError('Erro ao registrar sessão de estudo');
     }
   }, []);
 
   const handleComplete = useCallback(async () => {
-    setIsComplete(true);
-    setIsRunning(false);
-    startTimeRef.current = null;
-    localStorage.removeItem('pomodoro_timer_state');
-    
-    // Se for sessão de estudo, salvar horas
-    // Mas só se não houver callback externo (verificado via flag no sessionStorage)
-    if (sessionType === 'study') {
-      const studiedMinutes = getStudiedMinutes();
-      if (studiedMinutes > 0) {
-        // Verificar se há callback externo (PomodoroTimer com onSessionComplete)
-        const hasExternalCallback = sessionStorage.getItem('pomodoro_has_callback') === 'true';
-        if (!hasExternalCallback) {
-          await registerStudySession(studiedMinutes);
-        }
-      }
-    } else {
-      showSuccess(`⏰ Pausa concluída! Hora de voltar aos estudos!`);
+    // Prevenir múltiplas chamadas simultâneas
+    if (isCompletingRef.current || isComplete) {
+      return;
     }
-  }, [sessionType, getStudiedMinutes, registerStudySession]);
+    
+    isCompletingRef.current = true;
+    
+    try {
+      setIsComplete(true);
+      setIsRunning(false);
+      startTimeRef.current = null;
+      localStorage.removeItem('pomodoro_timer_state');
+      
+      // Se for sessão de estudo, salvar horas
+      // Mas só se não houver callback externo (verificado via flag no sessionStorage)
+      if (sessionType === 'study') {
+        const studiedMinutes = getStudiedMinutes();
+        if (studiedMinutes > 0) {
+          // Verificar se há callback externo (PomodoroTimer com onSessionComplete)
+          const hasExternalCallback = sessionStorage.getItem('pomodoro_has_callback') === 'true';
+          if (!hasExternalCallback) {
+            await registerStudySession(studiedMinutes);
+          }
+        }
+      } else {
+        showSuccess(`⏰ Pausa concluída! Hora de voltar aos estudos!`);
+      }
+    } finally {
+      // Resetar flag após um delay para permitir reset futuro
+      setTimeout(() => {
+        isCompletingRef.current = false;
+      }, 1000);
+    }
+  }, [sessionType, getStudiedMinutes, registerStudySession, isComplete]);
 
   // Salvar estado quando mudar (mas só depois de carregar o estado inicial)
   useEffect(() => {
@@ -257,14 +286,16 @@ export const PomodoroProvider = ({ children }) => {
       
       // Função para calcular e atualizar o tempo baseado no startTime
       const updateTimer = () => {
-        if (!startTimeRef.current) return;
+        if (!startTimeRef.current || isCompletingRef.current) return;
         
         const now = Date.now();
         const totalElapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
         const totalSecondsInitial = initialDuration * 60;
         const remainingSeconds = Math.max(0, totalSecondsInitial - totalElapsedSeconds);
         
-        if (remainingSeconds === 0) {
+        if (remainingSeconds === 0 && !isCompletingRef.current) {
+          // Parar o intervalo antes de chamar handleComplete
+          clearInterval(intervalRef.current);
           handleComplete();
           return;
         }
@@ -356,6 +387,7 @@ export const PomodoroProvider = ({ children }) => {
     setMinutes(sessionTypes[sessionType].duration);
     setSeconds(0);
     startTimeRef.current = null;
+    isCompletingRef.current = false; // Resetar flag de completude
     localStorage.removeItem('pomodoro_timer_state');
   };
 

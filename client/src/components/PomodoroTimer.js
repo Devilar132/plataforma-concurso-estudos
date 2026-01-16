@@ -39,8 +39,18 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
     };
   }, [onSessionComplete]);
 
-  // Registrar sessão de estudo
+  // Registrar sessão de estudo (com proteção contra duplicação)
   const registerStudySession = useCallback(async (studiedMinutes, subjectParam = null) => {
+    // Verificar se já registrou esta sessão (proteção adicional)
+    const sessionKey = `pomodoro_session_${Date.now()}_${studiedMinutes}`;
+    const lastSessionKey = sessionStorage.getItem('pomodoro_last_session_key');
+    
+    // Se for a mesma sessão (mesmo minuto), não registrar novamente
+    if (lastSessionKey && lastSessionKey === sessionKey) {
+      console.log('Sessão já registrada, ignorando duplicata');
+      return null;
+    }
+    
     try {
       const today = new Date().toISOString().split('T')[0];
       const session = await sessionsService.create({
@@ -48,11 +58,16 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
         minutes: studiedMinutes,
         subject: subjectParam || subject || 'Pomodoro'
       });
+      
+      // Marcar como registrada
+      sessionStorage.setItem('pomodoro_last_session_key', sessionKey);
+      
       if (onSessionComplete) {
         onSessionComplete(session);
       }
       return session;
     } catch (error) {
+      console.error('Erro ao registrar sessão de estudo:', error);
       showError('Erro ao registrar sessão de estudo');
       return null;
     }
@@ -65,10 +80,17 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
       const studiedMinutes = getStudiedMinutes();
       if (studiedMinutes > 0) {
         hasRegisteredRef.current = true;
-        // Usar setTimeout para evitar conflito com o contexto
-        setTimeout(() => {
-          registerStudySession(studiedMinutes, subject);
-        }, 100);
+        // Usar setTimeout para evitar conflito com o contexto e garantir execução única
+        const timeoutId = setTimeout(() => {
+          registerStudySession(studiedMinutes, subject).catch(err => {
+            console.error('Erro ao registrar sessão:', err);
+            // Se der erro, permitir tentar novamente
+            hasRegisteredRef.current = false;
+          });
+        }, 200);
+        
+        // Cleanup para evitar múltiplas execuções
+        return () => clearTimeout(timeoutId);
       }
     }
     
