@@ -1,0 +1,112 @@
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-card,
+.skeleton-stats-card,
+.skeleton-goal-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-light);
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    var(--surface-hover) 0px,
+    var(--surface) 40px,
+    var(--surface-hover) 80px
+  );
+  background-size: 200px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: var(--border-light);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.skeleton-line-title {
+  width: 70%;
+  height: 16px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-line-label {
+  width: 50%;
+  height: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-line-value {
+  width: 40%;
+  height: 24px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-line-short {
+  width: 40%;
+  margin-bottom: 0;
+}
+
+.skeleton-stats-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem;
+}
+
+.skeleton-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  background: var(--border-light);
+  flex-shrink: 0;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.skeleton-icon-small {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  background: var(--border-light);
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.skeleton-content {
+  flex: 1;
+}
+
+.skeleton-goal-card {
+  margin-bottom: 1rem;
+}
+
+.skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.skeleton-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-light);
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skeleton-body {
+  margin-bottom: 1rem;
+}
