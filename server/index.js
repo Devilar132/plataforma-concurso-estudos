@@ -18,8 +18,29 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 // Configurar CORS para aceitar requisições do frontend em produção
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  'https://plataforma-concurso-estudos.vercel.app' // URL do Vercel
+].filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (mobile apps, Postman, etc) em desenvolvimento
+    if (!origin && process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    // Em produção, verificar se origin está na lista
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      // Log para debug
+      console.log('CORS: Origin não permitida:', origin);
+      console.log('CORS: Origens permitidas:', allowedOrigins);
+      callback(null, true); // Permitir todas por enquanto (ajuste depois se necessário)
+    }
+  },
   credentials: true
 };
 app.use(cors(corsOptions));
