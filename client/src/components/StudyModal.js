@@ -39,8 +39,7 @@ const StudyModal = ({ isOpen, onClose, onSessionComplete, todayGoals }) => {
       });
 
       const totalHours = totalMinutes / 60;
-      const phrase = getContextualPhrase({ type: 'study_hours', hours: totalHours });
-      showSuccess(phrase || 'Horas registradas com sucesso!');
+      showSuccess(getContextualPhrase({ type: 'study_hours', hours: totalHours }) || 'Horas registradas com sucesso!');
       
       setFormData({
         hours: '',
