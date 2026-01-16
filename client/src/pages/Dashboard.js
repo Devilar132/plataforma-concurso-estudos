@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Plus, Search, Target, Star, Play, BarChart3, Clock } from 'lucide-react';
 import { authService } from '../services/auth';
@@ -46,6 +46,8 @@ const Dashboard = () => {
   const [hoursGoal, setHoursGoal] = useState(2.0);
   const [todayHours, setTodayHours] = useState(0);
   const [lastHoursChecked, setLastHoursChecked] = useState(0);
+  const isLoadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
   const user = authService.getCurrentUser();
 
@@ -67,6 +69,7 @@ const Dashboard = () => {
   }, []);
 
   const loadWeekData = useCallback(async () => {
+    if (isLoadingRef.current) return;
     try {
       const today = new Date();
       const weekStart = new Date(today);
@@ -105,6 +108,8 @@ const Dashboard = () => {
   }, [selectedDate]);
 
   const loadData = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     try {
       setLoading(true);
       const [goalsData, streakData, settings, todaySessions] = await Promise.all([
@@ -191,23 +196,39 @@ const Dashboard = () => {
       showError('Erro ao carregar dados. Tente novamente.');
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [selectedDate, lastCompletedCount, lastHoursChecked, checkMilestones]);
+  }, [selectedDate, checkMilestones]);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
       navigate('/login');
       return;
     }
-    loadData();
-    loadWeekData();
+    
+    // Carregar dados apenas uma vez no mount ou quando selectedDate mudar
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadData();
+      loadWeekData();
+    }
     
     // Verificar se precisa mostrar onboarding
     const onboardingCompleted = localStorage.getItem('onboardingCompleted');
     if (!onboardingCompleted && goals.length === 0 && !loading) {
       setShowOnboarding(true);
     }
-  }, [loadData, loadWeekData, navigate, goals.length, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]);
+  
+  // Carregar dados quando selectedDate mudar
+  useEffect(() => {
+    if (hasLoadedRef.current && !isLoadingRef.current) {
+      loadData();
+      loadWeekData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   // Filtrar metas
   useEffect(() => {
@@ -231,7 +252,9 @@ const Dashboard = () => {
       setShowForm(false);
       setEditingGoal(null);
       showSuccess(getRandomPhrase('goalCompleted') || 'Meta criada com sucesso!');
+      hasLoadedRef.current = false; // Forçar recarregar
       loadData();
+      loadWeekData();
     } catch (error) {
       showError(error.response?.data?.error || 'Erro ao criar meta');
     }
@@ -243,7 +266,9 @@ const Dashboard = () => {
       setEditingGoal(null);
       setShowForm(false);
       showSuccess('Meta atualizada com sucesso!');
+      hasLoadedRef.current = false; // Forçar recarregar
       loadData();
+      loadWeekData();
     } catch (error) {
       showError(error.response?.data?.error || 'Erro ao atualizar meta');
     }
@@ -276,7 +301,9 @@ const Dashboard = () => {
       } else {
         showSuccess('Meta marcada como pendente');
       }
+      hasLoadedRef.current = false; // Forçar recarregar
       loadData();
+      loadWeekData();
     } catch (error) {
       showError(error.response?.data?.error || 'Erro ao atualizar meta');
     }
@@ -287,7 +314,9 @@ const Dashboard = () => {
       try {
         await goalsService.delete(id);
         showSuccess('Meta excluída com sucesso');
+        hasLoadedRef.current = false;
         loadData();
+        loadWeekData();
       } catch (error) {
         showError('Erro ao excluir meta');
       }
@@ -588,7 +617,11 @@ const Dashboard = () => {
       <StreakRecoveryModal
         isOpen={showRecoveryModal}
         onClose={() => setShowRecoveryModal(false)}
-        onRecoveryComplete={loadData}
+        onRecoveryComplete={() => {
+          hasLoadedRef.current = false;
+          loadData();
+          loadWeekData();
+        }}
         streakData={streak}
       />
       
