@@ -181,13 +181,15 @@ export const PomodoroProvider = ({ children }) => {
       const totalSecondsRemaining = minutes * 60 + seconds;
       const totalSecondsInitial = initialDuration * 60;
       const studiedSeconds = totalSecondsInitial - totalSecondsRemaining;
-      return Math.max(0, Math.floor(studiedSeconds / 60));
+      // Usar Math.round para arredondar corretamente (não floor que perde minutos)
+      return Math.max(0, Math.round(studiedSeconds / 60));
     }
     
     // Se está rodando, calcular baseado no startTime (mais preciso)
     const now = Date.now();
     const totalElapsedSeconds = Math.floor((now - startTimeRef.current) / 1000);
-    return Math.max(0, Math.floor(totalElapsedSeconds / 60));
+    // Usar Math.round para arredondar corretamente
+    return Math.max(0, Math.round(totalElapsedSeconds / 60));
   }, [minutes, seconds, initialDuration, isRunning]);
 
   // Registrar sessão de estudo (mantido para compatibilidade, mas não usado quando onSessionComplete está presente)
@@ -298,9 +300,12 @@ export const PomodoroProvider = ({ children }) => {
         const totalSecondsInitial = initialDuration * 60;
         const remainingSeconds = Math.max(0, totalSecondsInitial - totalElapsedSeconds);
         
-        if (remainingSeconds === 0 && !isCompletingRef.current) {
+        if (remainingSeconds <= 0 && !isCompletingRef.current) {
           // Parar o intervalo antes de chamar handleComplete
           clearInterval(intervalRef.current);
+          // Garantir que minutos e segundos sejam 0 antes de completar
+          setMinutes(0);
+          setSeconds(0);
           handleComplete();
           return;
         }

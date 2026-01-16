@@ -18,15 +18,9 @@ const StudyHours = () => {
   const [weekData, setWeekData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTimer, setShowTimer] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  // Formulário de adicionar horas manualmente REMOVIDO
+  // const [showForm, setShowForm] = useState(false);
   const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({
-    date: today, // Sempre hoje, não pode alterar
-    hours: '',
-    minutes: '',
-    subject: '',
-    notes: ''
-  });
 
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#8B5CF6'];
 
