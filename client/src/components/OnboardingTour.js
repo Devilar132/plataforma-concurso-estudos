@@ -64,8 +64,7 @@ const OnboardingTour = ({ isOpen, onComplete, hasGoals }) => {
     } else {
       setHighlightedElement(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [step, steps]);
 
   const createExampleGoal = async () => {
     try {
