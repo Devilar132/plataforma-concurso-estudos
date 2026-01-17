@@ -201,7 +201,6 @@ const Dashboard = () => {
       setLoading(false);
       isLoadingRef.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, checkMilestones, lastCompletedCount, lastHoursChecked]);
 
   useEffect(() => {

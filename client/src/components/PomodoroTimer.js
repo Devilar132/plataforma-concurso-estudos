@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Clock, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Clock } from 'lucide-react';
 import { usePomodoro } from '../contexts/PomodoroContext';
 import { showError } from '../utils/toast';
 import { sessionsService } from '../services/sessions';
