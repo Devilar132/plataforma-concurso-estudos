@@ -53,7 +53,12 @@ const StudyHours = () => {
         date.setDate(date.getDate() + i);
         const dateStr = format(date, 'yyyy-MM-dd');
         const daySessions = weekSessions.filter(s => s.date === dateStr);
-        const totalHours = daySessions.reduce((sum, s) => sum + parseFloat(s.hours || 0), 0);
+        // IMPORTANTE: Usar APENAS minutos para evitar duplicação
+        // O campo 'hours' já é calculado a partir de 'minutes'
+        const totalHours = daySessions.reduce((sum, s) => {
+          const minutes = parseInt(s?.minutes) || 0;
+          return sum + (minutes / 60);
+        }, 0);
         weekDays.push({
           day: dayNames[date.getDay()],
           date: format(date, 'dd/MM'),

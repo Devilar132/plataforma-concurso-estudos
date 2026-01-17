@@ -1,0 +1,32 @@
+===========================================
+COMANDOS PARA INICIALIZAR O REPOSITÓRIO GIT
+===========================================
+
+Execute estes comandos no PowerShell, um por vez:
+
+1. Navegar para a pasta:
+cd "c:\Users\HTDOCS\Desktop\Plataforma de concurso"
+
+2. Inicializar Git:
+git init
+
+3. Configurar usuário (se ainda não configurou):
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+
+4. Adicionar todos os arquivos:
+git add .
+
+5. Fazer primeiro commit:
+git commit -m "Initial commit: Plataforma de estudos completa"
+
+6. Criar repositório no GitHub primeiro, depois:
+git remote add origin https://github.com/SEU_USUARIO/NOME_DO_REPO.git
+git branch -M main
+git push -u origin main
+
+===========================================
+SUBSTITUA:
+- SEU_USUARIO: seu username do GitHub
+- NOME_DO_REPO: nome do repositório que você criou
+===========================================

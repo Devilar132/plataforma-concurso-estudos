@@ -129,7 +129,8 @@ const Dashboard = () => {
       // Calcular horas estudadas hoje (usa APENAS minutos para evitar duplicação)
       const today = new Date().toISOString().split('T')[0];
       const todayHoursTotal = Array.isArray(todaySessions) ? todaySessions.reduce((sum, session) => {
-        // Usa apenas minutos, pois hours já é calculado a partir de minutes
+        // IMPORTANTE: Usa APENAS minutos para evitar duplicação
+        // O campo 'hours' já é calculado a partir de 'minutes', então não somar ambos!
         const minutes = parseInt(session?.minutes) || 0;
         return sum + (minutes / 60);
       }, 0) : 0;
@@ -158,8 +159,10 @@ const Dashboard = () => {
       }
       setLastCompletedCount(completed);
       
-      // Verificar milestones
-      checkMilestones();
+      // Verificar milestones (chamar apenas uma vez)
+      if (!isLoadingRef.current) {
+        checkMilestones();
+      }
       
       // Notificação diária (se tiver metas e for pela manhã)
       const hour = new Date().getHours();
@@ -198,7 +201,7 @@ const Dashboard = () => {
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [selectedDate, checkMilestones]);
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -629,7 +632,9 @@ const Dashboard = () => {
         isOpen={showOnboarding}
         onComplete={() => {
           setShowOnboarding(false);
+          hasLoadedRef.current = false;
           loadData();
+          loadWeekData();
         }}
         hasGoals={goals.length > 0}
       />
@@ -638,7 +643,13 @@ const Dashboard = () => {
         isOpen={showStudyModal}
         onClose={() => setShowStudyModal(false)}
         onSessionComplete={async (session) => {
-          // Recarregar dados primeiro para ter valores atualizados
+          console.log('Dashboard.onSessionComplete: Sessão completada', session);
+          
+          // Aguardar um pouco antes de recarregar para garantir que o backend processou
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Recarregar dados para ter valores atualizados
+          hasLoadedRef.current = false;
           await loadData();
           loadWeekData();
           
@@ -647,11 +658,14 @@ const Dashboard = () => {
             try {
               const today = new Date().toISOString().split('T')[0];
               const updatedSessions = await sessionsService.getAll(today);
+              // IMPORTANTE: Usar APENAS minutos para evitar duplicação
+              // O campo 'hours' já é calculado a partir de 'minutes'
               const updatedHours = Array.isArray(updatedSessions) ? updatedSessions.reduce((sum, s) => {
-                const h = parseFloat(s?.hours) || 0;
                 const m = parseInt(s?.minutes) || 0;
-                return sum + h + (m / 60);
+                return sum + (m / 60); // Só minutos, não somar hours!
               }, 0) : 0;
+              
+              console.log('Dashboard.onSessionComplete: Total de horas hoje:', updatedHours);
               
               // Buscar meta atualizada
               const currentSettings = await settingsService.get().catch(() => ({ daily_hours_goal: 2.0 }));
@@ -696,6 +710,7 @@ const Dashboard = () => {
         currentGoal={hoursGoal}
         onUpdate={(newGoal) => {
           setHoursGoal(newGoal);
+          hasLoadedRef.current = false;
           loadData();
         }}
       />

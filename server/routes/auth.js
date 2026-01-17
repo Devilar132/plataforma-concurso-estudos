@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { getDatabase } = require('../database');
+const { getDatabaseAdapter } = require('../database');
 const { JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
@@ -20,7 +20,7 @@ router.post('/register', [
     }
 
     const { name, email, password } = req.body;
-    const db = getDatabase();
+    const db = getDatabaseAdapter();
 
     // Verificar se email já existe
     db.get('SELECT id FROM users WHERE email = ?', [email], async (err, user) => {
@@ -44,9 +44,34 @@ router.post('/register', [
             return res.status(500).json({ error: 'Erro ao criar usuário' });
           }
 
+          // Obter ID do usuário criado (this.lastID funciona tanto para SQLite quanto PostgreSQL via adapter)
+          const userId = this.lastID;
+          
+          if (!userId) {
+            // Fallback: buscar ID do usuário recém-criado
+            db.get('SELECT id FROM users WHERE email = ?', [email], (err, newUser) => {
+              if (err || !newUser) {
+                return res.status(500).json({ error: 'Erro ao obter ID do usuário' });
+              }
+              
+              const token = jwt.sign(
+                { id: newUser.id, email },
+                JWT_SECRET,
+                { expiresIn: '7d' }
+              );
+
+              res.status(201).json({
+                message: 'Usuário criado com sucesso',
+                token,
+                user: { id: newUser.id, name, email }
+              });
+            });
+            return;
+          }
+          
           // Gerar token
           const token = jwt.sign(
-            { id: this.lastID, email },
+            { id: userId, email },
             JWT_SECRET,
             { expiresIn: '7d' }
           );
@@ -54,7 +79,7 @@ router.post('/register', [
           res.status(201).json({
             message: 'Usuário criado com sucesso',
             token,
-            user: { id: this.lastID, name, email }
+            user: { id: userId, name, email }
           });
         }
       );
@@ -76,7 +101,7 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-    const db = getDatabase();
+    const db = getDatabaseAdapter();
 
     db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
       if (err) {

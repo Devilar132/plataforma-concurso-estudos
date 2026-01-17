@@ -290,8 +290,12 @@ const closeDatabase = async () => {
   }
 };
 
+// Exportar adapter também
+const { getDatabaseAdapter } = require('./database/adapter');
+
 module.exports = {
   getDatabase,
+  getDatabaseAdapter,
   initDatabase,
   closeDatabase,
   USE_POSTGRES

@@ -98,12 +98,16 @@ router.post('/', [
     }
 
     if (existing) {
-      // Somar os minutos existentes com os novos minutos
-      // Se não houver minutos no banco, calcular a partir das horas
+      // IMPORTANTE: Usar APENAS o campo 'minutes' para evitar duplicação
+      // O campo 'hours' é calculado, então não usar para somar
       let existingMinutes = parseInt(existing.minutes) || 0;
+      
+      // Se não houver minutos mas houver hours (dados antigos), converter
       if (existingMinutes === 0 && existing.hours) {
         existingMinutes = Math.round(parseFloat(existing.hours) * 60);
       }
+      
+      // Somar apenas os minutos (não somar hours novamente!)
       const newTotalMinutes = existingMinutes + totalInputMinutes;
       const newHours = (newTotalMinutes / 60).toFixed(2);
       

@@ -1,0 +1,29 @@
+===========================================
+COMANDOS PARA FAZER PUSH PARA O GITHUB
+===========================================
+
+Execute estes comandos no PowerShell, um por vez:
+
+1. Navegar para a pasta do projeto:
+cd "c:\Users\HTDOCS\Desktop\Plataforma de concurso"
+
+2. Verificar se está no diretório correto (deve mostrar arquivos do projeto):
+dir
+
+3. Verificar status do Git:
+git status
+
+4. Adicionar o repositório remoto:
+git remote add origin https://github.com/Devilar132/plataforma-concurso-estudos.git
+
+5. Renomear branch para main (se necessário):
+git branch -M main
+
+6. Fazer push do código:
+git push -u origin main
+
+===========================================
+IMPORTANTE:
+- Certifique-se de estar na pasta do projeto antes de executar os comandos git
+- Se der erro de autenticação, você pode precisar configurar credenciais do GitHub
+===========================================

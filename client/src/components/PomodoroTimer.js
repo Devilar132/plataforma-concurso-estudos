@@ -39,41 +39,59 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
     };
   }, [onSessionComplete]);
 
-  // Registrar sessão de estudo (com proteção contra duplicação)
+  // Registrar sessão de estudo (com proteção contra duplicação da MESMA completude)
   const registerStudySession = useCallback(async (studiedMinutes, subjectParam = null) => {
-    // Verificar se já registrou esta sessão (proteção adicional)
-    // Usar uma chave baseada no tempo estudado e timestamp aproximado (arredondado para minutos)
-    const now = Date.now();
-    const minuteTimestamp = Math.floor(now / 60000) * 60000; // Arredondar para o minuto
-    const sessionKey = `pomodoro_session_${minuteTimestamp}_${studiedMinutes}`;
-    const lastSessionKey = sessionStorage.getItem('pomodoro_last_session_key');
+    const today = new Date().toISOString().split('T')[0];
     
-    // Se for a mesma sessão (mesmo minuto e mesma duração), não registrar novamente
-    if (lastSessionKey && lastSessionKey === sessionKey) {
-      console.log('Sessão já registrada, ignorando duplicata');
-      return null;
+    // Proteção: evitar que a MESMA completude seja registrada múltiplas vezes
+    // Usar timestamp preciso + random para identificar completudes únicas
+    const completionId = `pomodoro_completion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const currentCompletionId = sessionStorage.getItem('pomodoro_current_completion_id');
+    
+    // Se já está registrando uma completude (proteção contra chamadas simultâneas)
+    if (currentCompletionId) {
+      const completionData = JSON.parse(currentCompletionId);
+      const timeDiff = Date.now() - completionData.timestamp;
+      
+      // Se foi há menos de 3 segundos, é provavelmente a mesma completude sendo chamada múltiplas vezes
+      if (timeDiff < 3000 && completionData.minutes === studiedMinutes) {
+        console.log('PomodoroTimer.registerStudySession: Completude já está sendo registrada, ignorando duplicata');
+        return null;
+      }
     }
     
+    // Marcar esta completude como sendo registrada AGORA
+    sessionStorage.setItem('pomodoro_current_completion_id', JSON.stringify({
+      id: completionId,
+      minutes: studiedMinutes,
+      timestamp: Date.now()
+    }));
+    
+    console.log('PomodoroTimer.registerStudySession: Criando sessão de', studiedMinutes, 'minutos');
+    
     try {
-      const today = new Date().toISOString().split('T')[0];
       const session = await sessionsService.create({
         date: today,
         minutes: studiedMinutes,
         subject: subjectParam || subject || 'Pomodoro'
       });
       
-      // Marcar como registrada (válido por 2 minutos para evitar duplicatas)
-      sessionStorage.setItem('pomodoro_last_session_key', sessionKey);
+      console.log('PomodoroTimer.registerStudySession: Sessão criada com sucesso', session);
+      
+      // Limpar após 5 segundos (permite nova sessão, mas evita duplicação da mesma)
       setTimeout(() => {
-        sessionStorage.removeItem('pomodoro_last_session_key');
-      }, 120000); // 2 minutos
+        sessionStorage.removeItem('pomodoro_current_completion_id');
+      }, 5000);
       
       if (onSessionComplete) {
+        console.log('PomodoroTimer.registerStudySession: Chamando onSessionComplete');
         onSessionComplete(session);
       }
       return session;
     } catch (error) {
-      console.error('Erro ao registrar sessão de estudo:', error);
+      console.error('PomodoroTimer.registerStudySession: Erro ao registrar sessão:', error);
+      // Se der erro, limpar para permitir tentar novamente
+      sessionStorage.removeItem('pomodoro_current_completion_id');
       showError('Erro ao registrar sessão de estudo');
       return null;
     }
@@ -86,25 +104,34 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
       const studiedMinutes = getStudiedMinutes();
       if (studiedMinutes > 0) {
         hasRegisteredRef.current = true;
+        
         // Usar setTimeout para evitar conflito com o contexto e garantir execução única
         const timeoutId = setTimeout(() => {
-          registerStudySession(studiedMinutes, subject).catch(err => {
-            console.error('Erro ao registrar sessão:', err);
-            // Se der erro, permitir tentar novamente
-            hasRegisteredRef.current = false;
-          });
-        }, 200);
+          registerStudySession(studiedMinutes, subject)
+            .then(() => {
+              // Sucesso - manter flag para evitar duplicação desta mesma completude
+            })
+            .catch(err => {
+              console.error('Erro ao registrar sessão:', err);
+              // Se der erro, permitir tentar novamente
+              hasRegisteredRef.current = false;
+            });
+        }, 300);
         
         // Cleanup para evitar múltiplas execuções
         return () => clearTimeout(timeoutId);
       }
     }
     
-    // Reset quando timer é resetado
-    if (!isComplete && !isRunning) {
+    // Reset quando timer é resetado (permite nova sessão)
+    // IMPORTANTE: Resetar flag quando timer volta ao estado inicial
+    if (!isComplete && !isRunning && minutes === initialDuration && seconds === 0) {
       hasRegisteredRef.current = false;
+      // Limpar proteções para permitir nova sessão
+      sessionStorage.removeItem('pomodoro_current_completion_id');
+      console.log('PomodoroTimer: Timer resetado, permitindo nova sessão');
     }
-  }, [isComplete, sessionType, onSessionComplete, getStudiedMinutes, subject, isRunning, registerStudySession]);
+  }, [isComplete, sessionType, onSessionComplete, getStudiedMinutes, subject, isRunning, registerStudySession, minutes, seconds, initialDuration]);
 
   // Finalizar sessão manualmente
   const handleFinishEarly = () => {
@@ -120,14 +147,15 @@ const PomodoroTimer = ({ onSessionComplete, subject }) => {
 
   const handleConfirmFinish = async () => {
     const studiedMinutes = getStudiedMinutes();
-    reset();
-    setShowFinishConfirm(false);
     
     if (sessionType === 'study' && studiedMinutes > 0) {
       hasRegisteredRef.current = true;
       await registerStudySession(studiedMinutes, subject);
       // Callback já é chamado dentro de registerStudySession
     }
+    
+    reset();
+    setShowFinishConfirm(false);
   };
 
   const handleReset = () => {

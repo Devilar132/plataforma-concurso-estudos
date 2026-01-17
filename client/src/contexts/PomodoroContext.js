@@ -194,42 +194,67 @@ export const PomodoroProvider = ({ children }) => {
 
   // Registrar sessão de estudo (mantido para compatibilidade, mas não usado quando onSessionComplete está presente)
   const registerStudySession = useCallback(async (studiedMinutes) => {
-    // Proteção contra duplicação
-    const now = Date.now();
-    const minuteTimestamp = Math.floor(now / 60000) * 60000; // Arredondar para o minuto
-    const sessionKey = `pomodoro_context_session_${minuteTimestamp}_${studiedMinutes}`;
-    const lastSessionKey = sessionStorage.getItem('pomodoro_context_last_session_key');
+    const today = new Date().toISOString().split('T')[0];
     
-    if (lastSessionKey && lastSessionKey === sessionKey) {
-      console.log('Sessão já registrada no contexto, ignorando duplicata');
-      return;
+    // Proteção: evitar que a MESMA completude seja registrada múltiplas vezes
+    // Usar timestamp preciso + random para identificar completudes únicas
+    const completionId = `pomodoro_context_completion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const currentCompletionId = sessionStorage.getItem('pomodoro_context_current_completion_id');
+    
+    // Se já está registrando uma completude (proteção contra chamadas simultâneas)
+    if (currentCompletionId) {
+      const completionData = JSON.parse(currentCompletionId);
+      const timeDiff = Date.now() - completionData.timestamp;
+      
+      // Se foi há menos de 3 segundos, é provavelmente a mesma completude
+      if (timeDiff < 3000 && completionData.minutes === studiedMinutes) {
+        console.log('PomodoroContext.registerStudySession: Completude já está sendo registrada, ignorando duplicata');
+        return;
+      }
     }
     
+    // Marcar esta completude como sendo registrada AGORA
+    sessionStorage.setItem('pomodoro_context_current_completion_id', JSON.stringify({
+      id: completionId,
+      minutes: studiedMinutes,
+      timestamp: Date.now()
+    }));
+    
+    console.log('PomodoroContext.registerStudySession: Criando sessão de', studiedMinutes, 'minutos');
+    
     try {
-      const today = new Date().toISOString().split('T')[0];
-      await sessionsService.create({
+      const session = await sessionsService.create({
         date: today,
         minutes: studiedMinutes,
         subject: 'Pomodoro'
       });
       
-      // Marcar como registrada (válido por 2 minutos para evitar duplicatas)
-      sessionStorage.setItem('pomodoro_context_last_session_key', sessionKey);
+      console.log('PomodoroContext.registerStudySession: Sessão criada com sucesso', session);
+      
+      // Limpar após 5 segundos (permite nova sessão, mas evita duplicação da mesma)
       setTimeout(() => {
-        sessionStorage.removeItem('pomodoro_context_last_session_key');
-      }, 120000); // 2 minutos
+        sessionStorage.removeItem('pomodoro_context_current_completion_id');
+      }, 5000);
       
       const phrase = getRandomPhrase('pomodoroCompleted');
       showSuccess(phrase || `🎉 ${studiedMinutes} minutos de estudo registrados!`);
     } catch (error) {
       console.error('Erro ao registrar sessão de estudo:', error);
+      // Se der erro, limpar para permitir tentar novamente
+      sessionStorage.removeItem('pomodoro_context_current_completion_id');
       showError('Erro ao registrar sessão de estudo');
     }
   }, []);
 
   const handleComplete = useCallback(async () => {
-    // Prevenir múltiplas chamadas simultâneas
-    if (isCompletingRef.current || isComplete) {
+    // Prevenir múltiplas chamadas simultâneas da MESMA completude
+    if (isCompletingRef.current) {
+      console.log('PomodoroContext.handleComplete: Já está processando completude, ignorando');
+      return;
+    }
+    
+    // Se já está completo, não processar novamente (evita loop)
+    if (isComplete) {
       return;
     }
     
@@ -259,7 +284,7 @@ export const PomodoroProvider = ({ children }) => {
       // Resetar flag após um delay para permitir reset futuro
       setTimeout(() => {
         isCompletingRef.current = false;
-      }, 1000);
+      }, 2000); // 2 segundos é suficiente
     }
   }, [sessionType, getStudiedMinutes, registerStudySession, isComplete]);
 
@@ -398,7 +423,11 @@ export const PomodoroProvider = ({ children }) => {
     setSeconds(0);
     startTimeRef.current = null;
     isCompletingRef.current = false; // Resetar flag de completude
+    // Limpar proteções de completude para permitir nova sessão
+    sessionStorage.removeItem('pomodoro_context_current_completion_id');
+    sessionStorage.removeItem('pomodoro_current_completion_id');
     localStorage.removeItem('pomodoro_timer_state');
+    console.log('PomodoroContext.reset: Timer resetado, todas as proteções limpas');
   };
 
   const changeSessionType = (type) => {
