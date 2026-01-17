@@ -3,4 +3,4 @@ builder = "nixpacks"
 watchPatterns = ["server/**"]
 
 [deploy]
-startCommand = "npm start"
+startCommand = "node index.js"
