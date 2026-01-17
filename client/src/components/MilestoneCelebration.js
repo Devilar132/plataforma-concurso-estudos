@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Award, Star, Sparkles } from 'lucide-react';
+import { Trophy, Award, Star } from 'lucide-react';
 import Confetti from './Confetti';
 import './MilestoneCelebration.css';
 

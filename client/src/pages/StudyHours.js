@@ -17,7 +17,6 @@ const StudyHours = () => {
   const [weekData, setWeekData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTimer, setShowTimer] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
 
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#8B5CF6'];
 

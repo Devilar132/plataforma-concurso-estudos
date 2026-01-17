@@ -3,7 +3,6 @@ import { Play, Pause, RotateCcw, Clock, CheckCircle2 } from 'lucide-react';
 import { usePomodoro } from '../contexts/PomodoroContext';
 import { showError } from '../utils/toast';
 import { sessionsService } from '../services/sessions';
-import { getRandomPhrase } from '../utils/motivational';
 import ConfirmDialog from './ConfirmDialog';
 import './PomodoroTimer.css';
 

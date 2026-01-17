@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowRight, Target, Clock, BarChart3, CheckCircle2 } from 'lucide-react';
+import { X, ArrowRight, Target, Clock, BarChart3 } from 'lucide-react';
 import { goalsService } from '../services/goals';
 import { showSuccess } from '../utils/toast';
 import './OnboardingTour.css';
@@ -64,6 +64,7 @@ const OnboardingTour = ({ isOpen, onComplete, hasGoals }) => {
     } else {
       setHighlightedElement(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   const createExampleGoal = async () => {

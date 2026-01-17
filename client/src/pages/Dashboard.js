@@ -201,7 +201,8 @@ const Dashboard = () => {
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [selectedDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, checkMilestones, lastCompletedCount, lastHoursChecked]);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
