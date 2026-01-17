@@ -32,19 +32,28 @@ const corsOptions = {
     if (!origin && process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
-    // Em produção, verificar se origin está na lista
+    // Em produção, verificar se origin está na lista ou permitir todas temporariamente
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
       // Log para debug
-      console.log('CORS: Origin não permitida:', origin);
+      console.log('CORS: Origin recebida:', origin);
       console.log('CORS: Origens permitidas:', allowedOrigins);
-      callback(null, true); // Permitir todas por enquanto (ajuste depois se necessário)
+      // Permitir todas por enquanto para garantir funcionamento
+      callback(null, true);
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200 // Para navegadores legados
 };
+
 app.use(cors(corsOptions));
+
+// Tratar preflight requests explicitamente
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
