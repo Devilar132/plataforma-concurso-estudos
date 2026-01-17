@@ -8,4 +8,4 @@ cmds = ["npm install"]
 cmds = []
 
 [start]
-cmd = "cd /app/server && node index.js"
+cmd = "node index.js"
